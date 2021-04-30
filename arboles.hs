@@ -35,7 +35,7 @@ mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
 mergePunto k xs [] = xs
 mergePunto k (x:xs) (y:ys) = if coord k x <= coord k y then (x:mergePunto k xs (y:ys))
-                                else (y:mergePunto k (x:xs) ys)
+                                                       else (y:mergePunto k (x:xs) ys)
 
 split :: Punto p => [p] -> ([p], [p])
 split [] = ([], [])
