@@ -26,10 +26,36 @@ instance Punto Punto3d where
   coord 2 (P3d (x,y,z)) = z
   --coord _ p = NaN
 
+{-derecho:: NdTree -> NdTree
+derecho (Node der _ _ _) = der
 
-{-fromList :: Punto p => [p] -> NdTree p
+izquierdo:: NdTree -> NdTree
+izquierdo (Node _ _ izq _) = izq
+
+punto:: NdTree -> Punto
+punto (Node _ p _ _) = p
+
+eje:: NdTree -> Int
+eje (Node _ _ _ eje) = eje-}
+
+--
+splitP :: Punto p => [p] -> p -> Int -> ([p], [p])
+splitP [] p eje = ([], [])
+splitP [x] p eje = ([x], [])
+splitP ps p eje =([a | a<-ps, coord eje a < coord eje p], [a | a<-ps, coord eje a > coord eje p])
+
+
+fromList :: Punto p => [p] -> NdTree p
 fromList [] = Empty
-fromList (p:ps) = -- Eleccion eje = level%dimension p -}
+fromList [p] = Node Empty p Empty 0
+fromList ps = let nivel = 1 --(floor . logBase 2.0 . fromIntegral) length ps
+                  eje = mod nivel (dimension (head ps))
+                  punto = mediana ps eje
+                  ordenada = msortPunto ps eje
+                  (ls, gr) = splitP ordenada punto eje
+                  izq = fromList ls
+                  der = fromList gr
+                  in Node izq punto der eje
 
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
@@ -54,4 +80,4 @@ mediana ps k = let ordps = msortPunto ps k
                    largo = length ordps in if (mod largo 2) == 0 then ordps!!(div largo 2)
                                                                  else ordps!!(div (largo-1) 2)
 
---prueba = mediana [P2d(2,3), P2d(5,4), P2d(9,6), P2d(4,7), P2d(8,1), P2d(7,2)] 0
+--prueba = fromList [P2d(2,3), P2d(5,4), P2d(9,6), P2d(4,7), P2d(8,1), P2d(7,2)]
