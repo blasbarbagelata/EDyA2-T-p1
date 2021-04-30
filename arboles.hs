@@ -10,8 +10,8 @@ class Punto p where
   dist :: p -> p -> Double -- calcula la distancia entre dos puntos
   dist p q = sum [(coord i p - coord i q)^2 | i <- [0..(dimension p) - 1]] 
 
-newtype Punto2d = P2d (Double, Double)
-newtype Punto3d = P3d (Double, Double, Double)
+newtype Punto2d = P2d (Double, Double) 
+newtype Punto3d = P3d (Double, Double, Double) deriving Show
 
 instance Punto Punto2d  where
   dimension p = 2
@@ -31,23 +31,23 @@ instance Punto Punto3d where
 fromList [] = Empty
 fromList (p:ps) = -- Eleccion eje = level%dimension p -}
 
-merge :: (Num a, Ord a) => [a] -> [a] -> [a]
-merge [] ys = ys
-merge xs [] = xs
-merge (x:xs) (y:ys) = if x <= y then (x:merge xs (y:ys))
-                                else (y:merge (x:xs) ys)
+mergePunto :: Punto a => Int -> [a] -> [a] -> [a]
+mergePunto k [] ys = ys
+mergePunto k xs [] = xs
+mergePunto k (x:xs) (y:ys) = if coord k x <= coord k y then (x:mergePunto k xs (y:ys))
+                                else (y:mergePunto k (x:xs) ys)
 
-split :: (Num a, Ord a) => [a] -> ([a], [a])
+split :: Punto a => [a] -> ([a], [a])
 split [] = ([], [])
 split [x] = ([x], [])
 split (x:y:zs) = let (xs, ys) = split zs in (x:xs, y:ys) 
 
-msort :: (Num a, Ord a) => [a] -> [a]
-msort [] = []
-msort [x] = [x]
-msort xs = let (ls, rs) = split xs
-               (ls1, rs1) = (msort ls, msort rs)
-           in merge ls1 rs1
+msortPunto :: Punto a => [a] -> Int -> [a]
+msortPunto [] k = []
+msortPunto [x] k = [x]
+msortPunto xs k = let (ls, rs) = split xs
+                      (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
+                  in mergePunto k ls1 rs1
 
-mediana :: Punto p => [p] -> Int -> Double
-mediana ps k = msort [coord k p | p<-ps]
+{-mediana :: Punto p => [p] -> Int -> p
+mediana ps k = (msortPunto ps k)-}
