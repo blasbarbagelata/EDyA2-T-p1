@@ -38,24 +38,25 @@ punto (Node _ p _ _) = p
 eje:: NdTree -> Int
 eje (Node _ _ _ eje) = eje-}
 
---
-splitP :: Punto p => [p] -> p -> Int -> ([p], [p])
-splitP [] p eje = ([], [])
-splitP [x] p eje = ([x], [])
-splitP ps p eje =([a | a<-ps, coord eje a < coord eje p], [a | a<-ps, coord eje a > coord eje p])
-
+fromListDepth :: Punto p => [p] -> Int -> NdTree p
+fromListDepth [] _ = Empty
+fromListDepth [p] depth = Node Empty p Empty (mod depth (dimension p))
+fromListDepth ps depth = let eje = mod depth (dimension (head ps))
+                             ordenada = msortPunto ps eje
+                             medianIndex = div (length ordenada) 2
+                             medianCoord = coord eje (ordenada !! medianIndex)
+                             izqP = filter (\p -> coord eje p <= medianCoord) ordenada
+                             trueMedian = length izqP
+                             izqPuntos = init izqP
+                             derP = drop trueMedian ordenada
+                             puntoM = ordenada !! (trueMedian-1)
+                             izqN = fromListDepth izqPuntos (depth+1)
+                             derN = fromListDepth derP (depth+1)
+                             in Node izqN puntoM derN eje
+                             
 
 fromList :: Punto p => [p] -> NdTree p
-fromList [] = Empty
-fromList [p] = Node Empty p Empty 0
-fromList ps = let nivel = 1 --(floor . logBase 2.0 . fromIntegral) length ps
-                  eje = mod nivel (dimension (head ps))
-                  punto = mediana ps eje
-                  ordenada = msortPunto ps eje
-                  (ls, gr) = splitP ordenada punto eje
-                  izq = fromList ls
-                  der = fromList gr
-                  in Node izq punto der eje
+fromList ps = fromListDepth ps 0
 
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
@@ -75,9 +76,4 @@ msortPunto xs k = let (ls, rs) = split xs
                       (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
                   in mergePunto k ls1 rs1
 
-mediana :: Punto p => [p] -> Int -> p
-mediana ps k = let ordps = msortPunto ps k
-                   largo = length ordps in if (mod largo 2) == 0 then ordps!!(div largo 2)
-                                                                 else ordps!!(div (largo-1) 2)
-
---prueba = fromList [P2d(2,3), P2d(5,4), P2d(9,6), P2d(4,7), P2d(8,1), P2d(7,2)]
+listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2)]
