@@ -38,10 +38,10 @@ punto (Node _ p _ _) = p
 eje:: NdTree -> Int
 eje (Node _ _ _ eje) = eje-}
 
-fromListDepth :: Punto p => [p] -> Int -> NdTree p
-fromListDepth [] _ = Empty
-fromListDepth [p] depth = Node Empty p Empty (mod depth (dimension p))
-fromListDepth ps depth = let eje = mod depth (dimension (head ps))
+fromListLevel :: Punto p => [p] -> Int -> NdTree p
+fromListLevel [] _ = Empty
+fromListLevel [p] level = Node Empty p Empty (mod level (dimension p))
+fromListLevel ps level = let eje = mod level (dimension (head ps))
                              ordenada = msortPunto ps eje                       -- Ordenadamos la lista de puntos
                              medianIndex = div (length ordenada) 2              -- Indice de la mediana
                              medianCoord = coord eje (ordenada !! medianIndex)  -- Coordenada respecto al eje de la mediana
@@ -50,12 +50,12 @@ fromListDepth ps depth = let eje = mod depth (dimension (head ps))
                              derPuntos = drop (trueMedian+1) ordenada           -- Puntos estricamente mayores a la coordenada de la mediana
                              -- Si hay muchos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
                              puntoM = ordenada !! trueMedian                    -- Punto mediana
-                             izqNode = fromListDepth izqPuntos (depth+1)
-                             derNode = fromListDepth derPuntos (depth+1)
+                             izqNode = fromListLevel izqPuntos (level+1)
+                             derNode = fromListLevel derPuntos (level+1)
                              in Node izqNode puntoM derNode eje                       
 
 fromList :: Punto p => [p] -> NdTree p
-fromList ps = fromListDepth ps 0
+fromList ps = fromListLevel ps 0
 
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
