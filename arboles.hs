@@ -45,15 +45,13 @@ fromListDepth ps depth = let eje = mod depth (dimension (head ps))
                              ordenada = msortPunto ps eje
                              medianIndex = div (length ordenada) 2
                              medianCoord = coord eje (ordenada !! medianIndex)
-                             izqP = filter (\p -> coord eje p <= medianCoord) ordenada
-                             trueMedian = length izqP
-                             izqPuntos = init izqP
-                             derP = drop trueMedian ordenada
-                             puntoM = ordenada !! (trueMedian-1)
-                             izqN = fromListDepth izqPuntos (depth+1)
-                             derN = fromListDepth derP (depth+1)
-                             in Node izqN puntoM derN eje
-                             
+                             izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada)
+                             trueMedian = length izqPuntos
+                             derPuntos = drop (trueMedian+1) ordenada
+                             puntoM = ordenada !! trueMedian
+                             izqNode = fromListDepth izqPuntos (depth+1)
+                             derNode = fromListDepth derPuntos (depth+1)
+                             in Node izqNode puntoM derNode eje                       
 
 fromList :: Punto p => [p] -> NdTree p
 fromList ps = fromListDepth ps 0
@@ -76,4 +74,4 @@ msortPunto xs k = let (ls, rs) = split xs
                       (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
                   in mergePunto k ls1 rs1
 
-listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2)]
+listaP = [P2d (7, 3), P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d (7, 5)]
