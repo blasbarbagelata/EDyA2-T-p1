@@ -42,13 +42,14 @@ fromListDepth :: Punto p => [p] -> Int -> NdTree p
 fromListDepth [] _ = Empty
 fromListDepth [p] depth = Node Empty p Empty (mod depth (dimension p))
 fromListDepth ps depth = let eje = mod depth (dimension (head ps))
-                             ordenada = msortPunto ps eje
-                             medianIndex = div (length ordenada) 2
-                             medianCoord = coord eje (ordenada !! medianIndex)
-                             izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada)
-                             trueMedian = length izqPuntos
-                             derPuntos = drop (trueMedian+1) ordenada
-                             puntoM = ordenada !! trueMedian
+                             ordenada = msortPunto ps eje                       -- Ordenadamos la lista de puntos
+                             medianIndex = div (length ordenada) 2              -- Indice de la mediana
+                             medianCoord = coord eje (ordenada !! medianIndex)  -- Coordenada respecto al eje de la mediana
+                             izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada) -- Puntos con la coordenda menor o igual a la mediana
+                             trueMedian = length izqPuntos                      -- Indice de la mediana que sera la raiz
+                             derPuntos = drop (trueMedian+1) ordenada           -- Puntos estricamente mayores a la coordenada de la mediana
+                             -- Si hay muchos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
+                             puntoM = ordenada !! trueMedian                    -- Punto mediana
                              izqNode = fromListDepth izqPuntos (depth+1)
                              derNode = fromListDepth derPuntos (depth+1)
                              in Node izqNode puntoM derNode eje                       
