@@ -1,3 +1,4 @@
+
 data NdTree p = Node (NdTree p)  -- subárbol izquierdo
                       p          -- punto
                       (NdTree p) -- subárbol derecho
@@ -17,26 +18,24 @@ instance Punto Punto2d  where
   dimension p = 2
   coord 0 (P2d (x,y)) = x
   coord 1 (P2d (x,y)) = y
-  --coord _ p = NaN
 
 instance Punto Punto3d where
   dimension p = 3
   coord 0 (P3d (x,y,z)) = x
   coord 1 (P3d (x,y,z)) = y
   coord 2 (P3d (x,y,z)) = z
-  --coord _ p = NaN
 
-{-derecho:: NdTree -> NdTree
-derecho (Node der _ _ _) = der
+derecho :: NdTree p-> NdTree p
+derecho (Node  _ _ der _) = der
 
-izquierdo:: NdTree -> NdTree
-izquierdo (Node _ _ izq _) = izq
+izquierdo :: NdTree p -> NdTree p
+izquierdo (Node izq _ _ _) = izq
 
-punto:: NdTree -> Punto
+punto :: (Punto p) => NdTree p -> p  
 punto (Node _ p _ _) = p
 
-eje:: NdTree -> Int
-eje (Node _ _ _ eje) = eje-}
+eje :: NdTree p -> Int
+eje (Node _ _ _ eje) = eje
 
 fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
@@ -57,6 +56,15 @@ fromListLevel ps level = let eje = mod level (dimension (head ps))
 fromList :: Punto p => [p] -> NdTree p
 fromList ps = fromListLevel ps 0
 
+insertarlevel :: Punto p => p -> NdTree p -> Int -> NdTree p
+insertarlevel p Empty level = Node Empty p Empty (mod level (dimension p))
+insertarlevel p arbolito level = let hiperplano = eje arbolito in if coord hiperplano p <= coord hiperplano (punto (arbolito))
+                                                       then insertarlevel p (izquierdo arbolito) (level + 1)
+                                                       else insertarlevel p (derecho arbolito) (level + 1)
+
+insertar :: Punto p => p -> NdTree p -> NdTree p
+insertar p arbolito = insertarlevel p arbolito 0
+
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
 mergePunto k xs [] = xs
@@ -76,3 +84,6 @@ msortPunto xs k = let (ls, rs) = split xs
                   in mergePunto k ls1 rs1
 
 listaP = [P2d (7, 3), P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d (7, 5)]
+
+eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
+eliminar 
