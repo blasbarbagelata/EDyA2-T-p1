@@ -11,8 +11,8 @@ class Punto p where
   dist :: p -> p -> Double -- calcula la distancia entre dos puntos
   dist p q = sum [(coord i p - coord i q)^2 | i <- [0..(dimension p) - 1]] 
 
-newtype Punto2d = P2d (Double, Double) deriving Show
-newtype Punto3d = P3d (Double, Double, Double) deriving Show
+newtype Punto2d = P2d (Double, Double) deriving (Eq, Show)
+newtype Punto3d = P3d (Double, Double, Double) deriving (Eq, Show)
 
 instance Punto Punto2d  where
   dimension p = 2
@@ -83,7 +83,7 @@ msortPunto xs k = let (ls, rs) = split xs
                       (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
                   in mergePunto k ls1 rs1
 
-listaP = [P2d(7, 3), P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d(7, 5)]
+listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2)]
 
 treeToList :: (Punto a) => NdTree a -> [a]
 treeToList Empty = []
@@ -97,8 +97,10 @@ buscarReemplazoMax arbolito hiperplano = last (msortPunto (treeToList arbolito) 
 
 reemplazar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p 
 reemplazar p (Node izq q der hiperplano) = if der /= Empty 
-                                      then let reemplazo = (buscarReemplazoMin der hiperplano) in (Node izq reemplazo (eliminar reemplazo der) hiperplano)
-                                      else let reemplazo = (buscarReemplazoMax izq hiperplano) in (Node (eliminar reemplazo izq) reemplazo der hiperplano)
+                                           then let reemplazo = (buscarReemplazoMin der hiperplano) 
+                                                in (Node izq reemplazo (eliminar reemplazo der) hiperplano)
+                                           else let reemplazo = (buscarReemplazoMax izq hiperplano) 
+                                                in (Node (eliminar reemplazo izq) reemplazo der hiperplano)
 
 eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
 eliminar p Empty = Empty
