@@ -6,9 +6,9 @@ data NdTree p = Node (NdTree p)  -- subárbol izquierdo
                 | Empty deriving (Eq, Ord, Show)
 
 class Punto p where
-  dimension :: p -> Int -- devuelve el número de coordenadas de un punto
+  dimension :: p -> Int       -- devuelve el número de coordenadas de un punto
   coord :: Int -> p -> Double -- devuelve la coordenada k-ésima de un punto (comenzando de 0)
-  dist :: p -> p -> Double -- calcula la distancia entre dos puntos
+  dist :: p -> p -> Double    -- calcula la distancia entre dos puntos
   dist p q = sum [(coord i p - coord i q)^2 | i <- [0..(dimension p) - 1]] 
 
 newtype Punto2d = P2d (Double, Double) deriving (Eq, Show)
@@ -25,17 +25,17 @@ instance Punto Punto3d where
   coord 1 (P3d (x,y,z)) = y
   coord 2 (P3d (x,y,z)) = z
 
-derecho :: NdTree p-> NdTree p
-derecho (Node  _ _ der _) = der
+treeDerecho :: NdTree p -> NdTree p
+treeDerecho (Node  _ _ der _) = der
 
-izquierdo :: NdTree p -> NdTree p
-izquierdo (Node izq _ _ _) = izq
+treeIzquierdo :: NdTree p -> NdTree p
+treeIzquierdo (Node izq _ _ _) = izq
 
-punto :: (Punto p) => NdTree p -> p  
-punto (Node _ p _ _) = p
+treePunto :: (Punto p) => NdTree p -> p  
+treePunto (Node _ p _ _) = p
 
-eje :: NdTree p -> Int
-eje (Node _ _ _ eje) = eje
+treeEje :: NdTree p -> Int
+treeEje (Node _ _ _ eje) = eje
 
 fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
@@ -58,12 +58,13 @@ fromList ps = fromListLevel ps 0
 
 insertarlevel :: Punto p => p -> NdTree p -> Int -> NdTree p
 insertarlevel p Empty level = Node Empty p Empty (mod level (dimension p))
-insertarlevel p arbolito level = let hiperplano = eje arbolito in if coord hiperplano p <= coord hiperplano (punto (arbolito))
-                                                       then insertarlevel p (izquierdo arbolito) (level + 1)
-                                                       else insertarlevel p (derecho arbolito) (level + 1)
+insertarlevel p arbol level = let eje = treeEje arbol 
+                              in if coord eje p <= coord eje (treePunto (arbol))
+                              then insertarlevel p (treeIzquierdo arbol) (level + 1)
+                              else insertarlevel p (treeDerecho arbol) (level + 1)
 
 insertar :: Punto p => p -> NdTree p -> NdTree p
-insertar p arbolito = insertarlevel p arbolito 0
+insertar p arbol = insertarlevel p arbol 0
 
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys = ys
@@ -85,26 +86,27 @@ msortPunto xs k = let (ls, rs) = split xs
 
 listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2)]
 
-treeToList :: (Punto a) => NdTree a -> [a]
+-- Transforma un NdTree en una lista de puntos
+treeToList :: (Punto p) => NdTree p -> [p]
 treeToList Empty = []
-treeToList (Node  izq root der hiperplano) = treeToList izq ++ [root] ++ treeToList der
+treeToList (Node izq root der eje) = treeToList izq ++ [root] ++ treeToList der
 
 buscarReemplazoMin :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMin arbolito hiperplano = head (msortPunto (treeToList arbolito) hiperplano)
+buscarReemplazoMin arbol eje = head (msortPunto (treeToList arbol) eje) -- El primer elemento es el minimo
 
 buscarReemplazoMax :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMax arbolito hiperplano = last (msortPunto (treeToList arbolito) hiperplano) 
+buscarReemplazoMax arbol eje = last (msortPunto (treeToList arbol) eje) -- El ultimo elemento es el maximo
 
 reemplazar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p 
-reemplazar p (Node izq q der hiperplano) = if der /= Empty 
-                                           then let reemplazo = (buscarReemplazoMin der hiperplano) 
-                                                in (Node izq reemplazo (eliminar reemplazo der) hiperplano)
-                                           else let reemplazo = (buscarReemplazoMax izq hiperplano) 
-                                                in (Node (eliminar reemplazo izq) reemplazo der hiperplano)
+reemplazar p (Node izq q der eje) = if der /= Empty 
+                                           then let reemplazo = (buscarReemplazoMin der eje) 
+                                                in (Node izq reemplazo (eliminar reemplazo der) eje)
+                                           else let reemplazo = (buscarReemplazoMax izq eje) 
+                                                in (Node (eliminar reemplazo izq) reemplazo der eje)
 
 eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
 eliminar p Empty = Empty
-eliminar p (Node Empty q Empty hiperplano) = if p == q then Empty else (Node Empty q Empty hiperplano)
-eliminar p (Node izq q der hiperplano) | p == q = reemplazar p (Node izq q der hiperplano)
-                                       | coord hiperplano p <= coord hiperplano q = (Node (eliminar p izq) q der hiperplano)
-                                       | otherwise = (Node izq q (eliminar p der) hiperplano)
+eliminar p (Node Empty q Empty eje) = if p == q then Empty else (Node Empty q Empty eje)
+eliminar p (Node izq q der eje) | p == q = reemplazar p (Node izq q der eje) -- Reemplazos la raiz con el punto correspondiente
+                                | coord eje p <= coord eje q = (Node (eliminar p izq) q der eje)
+                                | otherwise = (Node izq q (eliminar p der) eje)
