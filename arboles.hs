@@ -90,10 +90,10 @@ treeToList Empty = []
 treeToList (Node  izq root der hiperplano) = treeToList izq ++ [root] ++ treeToList der
 
 buscarReemplazoMin :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMin arbolito hiperplano = minimum[coord hiperplano p  | p <- treeToList arbolito] 
+buscarReemplazoMin arbolito hiperplano = head (msortPunto (treeToList arbolito) hiperplano)
 
 buscarReemplazoMax :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMax arbolito hiperplano = maximum[coord hiperplano p  | p <- treeToList arbolito] 
+buscarReemplazoMax arbolito hiperplano = last (msortPunto (treeToList arbolito) hiperplano) 
 
 reemplazar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p 
 reemplazar p (Node izq q der hiperplano) = if der /= Empty 
@@ -103,6 +103,6 @@ reemplazar p (Node izq q der hiperplano) = if der /= Empty
 eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
 eliminar p Empty = Empty
 eliminar p (Node Empty q Empty hiperplano) = if p == q then Empty else (Node Empty q Empty hiperplano)
-eliminar p (Node izq q der hiperplano)  | p == q = reemplazar p (Node izq q der hiperplano)
-                                      | coord hiperplano p <= coord hiperplano q = (Node (eliminar p izq) q der hiperplano)
-                                      | otherwise = (Node izq q (eliminar p der) hiperplano)
+eliminar p (Node izq q der hiperplano) | p == q = reemplazar p (Node izq q der hiperplano)
+                                       | coord hiperplano p <= coord hiperplano q = (Node (eliminar p izq) q der hiperplano)
+                                       | otherwise = (Node izq q (eliminar p der) hiperplano)
