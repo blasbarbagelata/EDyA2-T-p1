@@ -83,7 +83,26 @@ msortPunto xs k = let (ls, rs) = split xs
                       (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
                   in mergePunto k ls1 rs1
 
-listaP = [P2d (7, 3), P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d (7, 5)]
+listaP = [P2d(7, 3), P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d(7, 5)]
+
+treeToList :: (Punto a) => NdTree a -> [a]
+treeToList Empty = []
+treeToList (Node  izq root der hiperplano) = treeToList izq ++ [root] ++ treeToList der
+
+buscarReemplazoMin :: (Punto p) => NdTree p -> Int -> p
+buscarReemplazoMin arbolito hiperplano = minimum[coord hiperplano p  | p <- treeToList arbolito] 
+
+buscarReemplazoMax :: (Punto p) => NdTree p -> Int -> p
+buscarReemplazoMax arbolito hiperplano = maximum[coord hiperplano p  | p <- treeToList arbolito] 
+
+reemplazar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p 
+reemplazar p (Node izq q der hiperplano) = if der /= Empty 
+                                      then let reemplazo = (buscarReemplazoMin der hiperplano) in (Node izq reemplazo (eliminar reemplazo der) hiperplano)
+                                      else let reemplazo = (buscarReemplazoMax izq hiperplano) in (Node (eliminar reemplazo izq) reemplazo der hiperplano)
 
 eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
-eliminar 
+eliminar p Empty = Empty
+eliminar p (Node Empty q Empty hiperplano) = if p == q then Empty else (Node Empty q Empty hiperplano)
+eliminar p (Node izq q der hiperplano)  | p == q = reemplazar p (Node izq q der hiperplano)
+                                      | coord hiperplano p <= coord hiperplano q = (Node (eliminar p izq) q der hiperplano)
+                                      | otherwise = (Node izq q (eliminar p der) hiperplano)
