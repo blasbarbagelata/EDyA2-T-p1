@@ -9,7 +9,7 @@ class Punto p where
   dimension :: p -> Int       -- devuelve el número de coordenadas de un punto
   coord :: Int -> p -> Double -- devuelve la coordenada k-ésima de un punto (comenzando de 0)
   dist :: p -> p -> Double    -- calcula la distancia entre dos puntos
-  dist p q = sum [(coord i p - coord i q)^2 | i <- [0..(dimension p) - 1]] 
+  dist p q = sum [(coord i p - coord i q)^2 | i <- [0..((dimension p) - 1)]] 
 
 newtype Punto2d = P2d (Double, Double) deriving (Eq, Show)
 newtype Punto3d = P3d (Double, Double, Double) deriving (Eq, Show)
@@ -128,3 +128,18 @@ eliminar p (Node Empty q Empty eje) = if p == q then Empty else (Node Empty q Em
 eliminar p (Node izq q der eje) | p == q = reemplazar (Node izq q der eje) -- Reemplazos la raiz con el punto correspondiente
                                 | coord eje p <= coord eje q = (Node (eliminar p izq) q der eje)
                                 | otherwise = (Node izq q (eliminar p der) eje)
+
+
+-- Apartado 5)
+
+type Rect = (Punto2d,Punto2d)
+
+inRegion :: Punto2d -> Rect -> Bool
+inRegion (P2d(x,y)) (P2d(x1,y1),P2d(x2,y2)) = x >= (min x1 x2) && x <= (max x1 x2) && y >= (min y1 y2) && y <= (max y1 y2)
+                                          -- Region delimitada por las coordenadas x / Region delimitada por las coordenadas y
+
+{-ortogonalSearchFacil :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearchFacil pTree rect = filter (inRegion) (treeToList pTree)
+
+ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearch pTree rect =-}
