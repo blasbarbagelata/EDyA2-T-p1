@@ -138,8 +138,25 @@ inRegion :: Punto2d -> Rect -> Bool
 inRegion (P2d(x,y)) (P2d(x1,y1),P2d(x2,y2)) = x >= (min x1 x2) && x <= (max x1 x2) && y >= (min y1 y2) && y <= (max y1 y2)
                                           -- Region delimitada por las coordenadas x / Region delimitada por las coordenadas y
 
-{-ortogonalSearchFacil :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearchFacil pTree rect = filter (inRegion) (treeToList pTree)
+ortogonalSearchFacil :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearchFacil pTree rect = filter (\p -> inRegion p rect) (treeToList pTree)
+
+{-
+comparar :: Punto p => Int -> p -> p -> Ordering
+comparar eje p q = compare (coord eje p) (coord eje q)
 
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearch pTree rect =-}
+ortogonalSearch Empty _ = []
+ortogonalSearch (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
+ortogonalSearch (Node izq p der eje) (r1,r2) = 
+  let (low, high) = if comparar eje r1 r2 == GT then (r2,r1) else (r1,r2)
+      left = if comparar eje low p == GT then [] else ortogonalSearch izq (r1,r2)
+      right = if comparar eje high p == GT then ortogonalSearch der (r1,r2) else []
+  in left ++ [p | inRegion p (r1,r2)] ++ right
+
+
+ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearch Empty _ = []
+ortogonalSearch (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
+ortogonalSearch (Node izq p der eje) (P2d(x1,y1),P2d(x2,y2)) =-}
+
