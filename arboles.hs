@@ -141,22 +141,65 @@ inRegion (P2d(x,y)) (P2d(x1,y1),P2d(x2,y2)) = x >= (min x1 x2) && x <= (max x1 x
 ortogonalSearchFacil :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearchFacil pTree rect = filter (\p -> inRegion p rect) (treeToList pTree)
 
-{-
-comparar :: Punto p => Int -> p -> p -> Ordering
-comparar eje p q = compare (coord eje p) (coord eje q)
+{--- Compara coordenadas de dos puntos dado un eje, devuelve True si el primero es estrictamente mas grande que el segundo
+greater :: Punto p => Int -> p -> p -> Bool
+greater eje p q = coord eje p > coord eje q
 
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearch Empty _ = []
 ortogonalSearch (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
+ortogonalSearch (Node izq p der eje) (q1,q2) = 
+  let (minEje, maxEje) = if greater eje q1 q2 then (q2, q1) else (q1, q2)
+      leftP = if greater eje minEje p then [] else ortogonalSearch izq (q1,q2)
+      rightP = if greater eje maxEje p then ortogonalSearch der (q1,q2) else []
+  in leftP ++ (if inRegion p (q1,q2) then [p] else []) ++ rightP-}
+
+-- Dado un conjunto de puntos no vacio devuelve el minimo rectangulo que contenga a todos los puntos
+minimumBoundingBox :: NdTree Punto2d -> Rect
+minimumBoundingBox ndTree = let listPoints = treeToList ndTree
+                                sortPointsX = msortPunto (listPoints) 0
+                                sortPointsY = msortPunto (listPoints) 0
+                                (minX, maxX) = (coord 0 (head sortPointsX), coord 0 (last sortPointsX))
+                                (minY, maxY) = (coord 1 (head sortPointsY), coord 1 (last sortPointsY))
+                                in (P2d (minX, minY), P2d (maxX, maxY))
+
+-- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
+leftBelowBox:: Punto2d -> Rect -> Int -> Rect
+leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, lowY), P2d(highX, y))
+leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, lowY), P2d(x, highY))
+-- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
+rightAboveBox:: Punto2d -> Rect -> Int -> Rect
+rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, y), P2d(highX, highY))
+rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(x, lowY), P2d(highX, highY))
+
+-- Determina si el primer rectangulo contiene al segundo
+boxContain :: Rect -> Rect -> Bool
+boxContain rect (r1,r2) = inRegion r1 rect && inRegion r2 rect
+
+-- Determina si los rectangulos se intersecan
+boxIntersect :: Rect -> Rect -> Bool
+boxIntersect rect (r1,r2) = inRegion r1 rect || inRegion r2 rect
+
+-- Dado un rectangulo, pone los minimos valores en la primer componente y los mayores en la segunda
+lowHigh :: Rect -> Rect
+lowHigh (P2d(x1,y1),P2d(x2,y2)) = (P2d(min x1 x2, min y1 y2), P2d(max x1 x2, max y1 y2))
+
+ortogonalSearchBox :: NdTree Punto2d -> Rect -> Rect -> [Punto2d]
+ortogonalSearchBox Empty _ _ = []
+ortogonalSearchBox (Node Empty p Empty _) rect _ = [p | inRegion p rect]
+ortogonalSearchBox (Node izq p der eje) rect box = 
+  let leftBox = leftBelowBox p box eje
+      rightBox = rightAboveBox p box eje
+      left = if boxContain rect leftBox then treeToList izq 
+      else if boxIntersect rect leftBox then ortogonalSearchBox izq rect leftBox else []
+      right = if boxContain rect rightBox then treeToList der 
+      else if boxIntersect rect rightBox then ortogonalSearchBox der rect rightBox else []
+  in left ++([p | inRegion p rect])++right
+
+ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearch Empty _ = []
+ortogonalSearch (Node Empty p Empty _) rect = [p | inRegion p rect]
 ortogonalSearch (Node izq p der eje) (r1,r2) = 
-  let (low, high) = if comparar eje r1 r2 == GT then (r2,r1) else (r1,r2)
-      left = if comparar eje low p == GT then [] else ortogonalSearch izq (r1,r2)
-      right = if comparar eje high p == GT then ortogonalSearch der (r1,r2) else []
-  in left ++ [p | inRegion p (r1,r2)] ++ right
-
-
-ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearch Empty _ = []
-ortogonalSearch (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
-ortogonalSearch (Node izq p der eje) (P2d(x1,y1),P2d(x2,y2)) =-}
-
+  let rectangulo = lowHigh (r1,r2)
+      box = minimumBoundingBox (Node izq p der eje)
+  in ortogonalSearchBox (Node izq p der eje) rectangulo box
