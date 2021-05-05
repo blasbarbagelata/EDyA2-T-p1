@@ -155,22 +155,23 @@ ortogonalSearch (Node izq p der eje) (q1,q2) =
   in leftP ++ (if inRegion p (q1,q2) then [p] else []) ++ rightP-}
 
 -- Dado un conjunto de puntos no vacio devuelve el minimo rectangulo que contenga a todos los puntos
-minimumBoundingBox :: NdTree Punto2d -> Rect
-minimumBoundingBox ndTree = let listPoints = treeToList ndTree
-                                sortPointsX = msortPunto (listPoints) 0
-                                sortPointsY = msortPunto (listPoints) 0
-                                (minX, maxX) = (coord 0 (head sortPointsX), coord 0 (last sortPointsX))
-                                (minY, maxY) = (coord 1 (head sortPointsY), coord 1 (last sortPointsY))
-                                in (P2d (minX, minY), P2d (maxX, maxY))
+minimumBox :: NdTree Punto2d -> Rect
+minimumBox ndTree = let listPoints = treeToList ndTree
+                        sortPointsX = msortPunto (listPoints) 0
+                        sortPointsY = msortPunto (listPoints) 1
+                        (minX, maxX) = (coord 0 (head sortPointsX), coord 0 (last sortPointsX))
+                        (minY, maxY) = (coord 1 (head sortPointsY), coord 1 (last sortPointsY))
+                        in (P2d (minX, minY), P2d (maxX, maxY))
 
 -- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
 leftBelowBox:: Punto2d -> Rect -> Int -> Rect
-leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, lowY), P2d(highX, y))
-leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, lowY), P2d(x, highY))
+leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, lowY), P2d(x, highY))
+leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, lowY), P2d(highX, y))
+
 -- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
 rightAboveBox:: Punto2d -> Rect -> Int -> Rect
-rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, y), P2d(highX, highY))
-rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(x, lowY), P2d(highX, highY))
+rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(x, lowY), P2d(highX, highY))
+rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, y), P2d(highX, highY))
 
 -- Determina si el primer rectangulo contiene al segundo
 boxContain :: Rect -> Rect -> Bool
@@ -178,7 +179,8 @@ boxContain rect (r1,r2) = inRegion r1 rect && inRegion r2 rect
 
 -- Determina si los rectangulos se intersecan
 boxIntersect :: Rect -> Rect -> Bool
-boxIntersect rect (r1,r2) = inRegion r1 rect || inRegion r2 rect
+boxIntersect rect (P2d(xlow, ylow),P2d(xhigh,yhigh)) = 
+  (inRegion (P2d(xlow, ylow)) rect) || (inRegion (P2d(xhigh,yhigh)) rect) || (inRegion (P2d(xlow, yhigh)) rect) || (inRegion (P2d(xhigh, ylow)) rect)
 
 -- Dado un rectangulo, pone los minimos valores en la primer componente y los mayores en la segunda
 lowHigh :: Rect -> Rect
@@ -199,7 +201,8 @@ ortogonalSearchBox (Node izq p der eje) rect box =
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearch Empty _ = []
 ortogonalSearch (Node Empty p Empty _) rect = [p | inRegion p rect]
-ortogonalSearch (Node izq p der eje) (r1,r2) = 
+ortogonalSearch ndTree (r1,r2) = 
   let rectangulo = lowHigh (r1,r2)
-      box = minimumBoundingBox (Node izq p der eje)
-  in if boxContain box rectangulo then treeToList (Node izq p der eje) else ortogonalSearchBox (Node izq p der eje) rectangulo box
+      box = minimumBox ndTree
+  in if boxContain rectangulo box then treeToList ndTree 
+     else if boxIntersect box rectangulo then ortogonalSearchBox ndTree rectangulo box else []
