@@ -28,7 +28,7 @@ instance Punto Punto3d where
   coord 2 (P3d (x,y,z)) = z
 
 -- Lista de puntos del ejemplo en el enunciado
-listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2)]
+listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d(1,10), P2d(3,5), P2d(6,8)]
 
 -- Funciones para acceder a los campos de NdTree -------------------------------
 treeDerecho :: NdTree p -> NdTree p
@@ -44,23 +44,25 @@ treeEje :: NdTree p -> Int
 treeEje (Node _ _ _ eje) = eje
 
 -- Implementacion de MergeSort para la clase Puntos -----------------------------
-mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
-mergePunto k [] ys = ys
-mergePunto k xs [] = xs
-mergePunto k (x:xs) (y:ys) = if coord k x <= coord k y then (x:mergePunto k xs (y:ys))
-                                                       else (y:mergePunto k (x:xs) ys)
+mergePunto :: Punto p => Int -> [p] -> [p] -> Bool -> [p]
+mergePunto k [] ys _ = ys
+mergePunto k xs [] _ = xs
+mergePunto k (x:xs) (y:ys) False = if coord k x <= coord k y then (x:mergePunto k xs (y:ys) False)
+                                                             else (y:mergePunto k (x:xs) ys False)
+mergePunto k (x:xs) (y:ys) True = if coord k x >= coord k y then (x:mergePunto k xs (y:ys) True)
+                                                            else (y:mergePunto k (x:xs) ys True)
 
 split :: Punto p => [p] -> ([p], [p])
 split [] = ([], [])
 split [x] = ([x], [])
 split (x:y:zs) = let (xs, ys) = split zs in (x:xs, y:ys) 
 
-msortPunto :: Punto p => [p] -> Int -> [p]
-msortPunto [] k = []
-msortPunto [x] k = [x]
-msortPunto xs k = let (ls, rs) = split xs
-                      (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
-                  in mergePunto k ls1 rs1
+msortPunto :: Punto p => [p] -> Int -> Bool -> [p]
+msortPunto [] k _ = []
+msortPunto [x] k _ = [x]
+msortPunto xs k orden = let (ls, rs) = split xs
+                            (ls1, rs1) = (msortPunto ls k orden, msortPunto rs k orden)
+                        in mergePunto k ls1 rs1 orden
 
 -------------------------------------------------------------------------------------
 
@@ -69,19 +71,19 @@ msortPunto xs k = let (ls, rs) = split xs
 -- A partir de una lista de Puntos y un nivel, construye un NdTree
 fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
-fromListLevel [p] level = Node Empty p Empty (mod level (dimension p))
-fromListLevel ps level = let eje = mod level (dimension (head ps))
-                             ordenada = msortPunto ps eje                       -- Ordenadamos la lista de puntos
-                             medianIndex = div (length ordenada) 2              -- Indice de la mediana
-                             medianCoord = coord eje (ordenada !! medianIndex)  -- Coordenada respecto al eje de la mediana
+fromListLevel [p] nivel = Node Empty p Empty (mod nivel (dimension p))
+fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
+                             listaOrd = msortPunto ps eje False                 -- Ordenadamos la lista de puntos
+                             medianaInd = div (length listaOrd) 2               -- Indice de la mediana
+                             medianaCoord = coord eje (listaOrd !! medianaInd)  -- Coordenada respecto al eje de la mediana
                              izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada) -- Puntos con la coordenda menor o igual a la mediana
-                             trueMedian = length izqPuntos                      -- Indice de la mediana que sera la raiz
-                             derPuntos = drop (trueMedian+1) ordenada           -- Puntos estricamente mayores a la coordenada de la mediana
+                             trueMedianaInd = length izqPuntos                  -- Indice de la mediana que sera la raiz
+                             derPuntos = drop (trueMedianaInd+1) listaOrd       -- Puntos estricamente mayores a la coordenada de la mediana
                              -- Si hay muchos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
-                             puntoM = ordenada !! trueMedian                    -- Punto mediana
-                             izqNode = fromListLevel izqPuntos (level+1)
-                             derNode = fromListLevel derPuntos (level+1)
-                             in Node izqNode puntoM derNode eje                       
+                             puntoM = listaOrd !! trueMedianaInd                -- Punto mediana
+                             izqNodo = fromListLevel izqPuntos (nivel+1)
+                             derNode = fromListLevel derPuntos (nivel+1)
+                             in Node izqNodo puntoM derNode eje                       
 
 -- -- A partir de una lista de Puntos, construye un NdTree desde 0
 fromList :: Punto p => [p] -> NdTree p
@@ -89,13 +91,15 @@ fromList ps = fromListLevel ps 0
 
 -- Apartado 3)
 
+-- Inserta un punto en un arbol segun el nivel
 insertarlevel :: Punto p => p -> NdTree p -> Int -> NdTree p
-insertarlevel p Empty level = Node Empty p Empty (mod level (dimension p))
-insertarlevel p arbol level = let eje = treeEje arbol 
+insertarlevel p Empty nivel = Node Empty p Empty (mod nivel (dimension p))
+insertarlevel p arbol nivel = let eje = treeEje arbol 
                               in if coord eje p <= coord eje (treePunto (arbol))
-                              then insertarlevel p (treeIzquierdo arbol) (level + 1)
-                              else insertarlevel p (treeDerecho arbol) (level + 1)
+                              then insertarlevel p (treeIzquierdo arbol) (nivel + 1)
+                              else insertarlevel p (treeDerecho arbol) (nivel + 1)
 
+-- Inserta un punto en un NdTree
 insertar :: Punto p => p -> NdTree p -> NdTree p
 insertar p arbol = insertarlevel p arbol 0
 
@@ -104,24 +108,25 @@ insertar p arbol = insertarlevel p arbol 0
 -- Transforma un NdTree en una lista de puntos
 treeToList :: (Punto p) => NdTree p -> [p]
 treeToList Empty = []
-treeToList (Node izq root der eje) = treeToList izq ++ [root] ++ treeToList der
+treeToList (Node izq punto der eje) = treeToList izq ++ [punto] ++ treeToList der
 
 -- Devuelve el punto con que posee la coordenada minima del eje correspondiente
 buscarReemplazoMin :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMin arbol eje = head (msortPunto (treeToList arbol) eje) -- El primer elemento es el minimo
+buscarReemplazoMin arbol eje = head (msortPunto (treeToList arbol) eje False) -- El primer elemento es el minimo
 
 -- Devuelve el punto con que posee la coordenada maxima del eje correspondiente
 buscarReemplazoMax :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMax arbol eje = last (msortPunto (treeToList arbol) eje) -- El ultimo elemento es el maximo
+buscarReemplazoMax arbol eje = head (msortPunto (treeToList arbol) eje True) -- El primer elemento es el maximo
 
 -- Reemplaza la raiz de un arbol
 reemplazar :: (Eq p, Punto p) => NdTree p -> NdTree p 
-reemplazar (Node izq q der eje) = if der /= Empty 
+reemplazar (Node izq _ der eje) = if der /= Empty 
                                   then let reemplazo = (buscarReemplazoMin der eje) 
                                        in (Node izq reemplazo (eliminar reemplazo der) eje)
                                   else let reemplazo = (buscarReemplazoMax izq eje) 
                                        in (Node (eliminar reemplazo izq) reemplazo der eje)
 
+-- Elimina un punto de un conjunto de Puntos.
 eliminar :: (Eq p, Punto p) => p -> NdTree p -> NdTree p
 eliminar p Empty = Empty
 eliminar p (Node Empty q Empty eje) = if p == q then Empty else (Node Empty q Empty eje)
@@ -134,75 +139,27 @@ eliminar p (Node izq q der eje) | p == q = reemplazar (Node izq q der eje) -- Re
 
 type Rect = (Punto2d,Punto2d)
 
+-- Determina si un punto se encuentra dentro de un rectangulo
 inRegion :: Punto2d -> Rect -> Bool
 inRegion (P2d(x,y)) (P2d(x1,y1),P2d(x2,y2)) = x >= (min x1 x2) && x <= (max x1 x2) && y >= (min y1 y2) && y <= (max y1 y2)
                                           -- Region delimitada por las coordenadas x / Region delimitada por las coordenadas y
 
-ortogonalSearchFacil :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearchFacil pTree rect = filter (\p -> inRegion p rect) (treeToList pTree)
-
-{--- Compara coordenadas de dos puntos dado un eje, devuelve True si el primero es estrictamente mas grande que el segundo
+-- Compara coordenadas de dos puntos dado un eje, devuelve True si el primero es estrictamente mas grande que el segundo
 greater :: Punto p => Int -> p -> p -> Bool
 greater eje p q = coord eje p > coord eje q
-
-ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearch Empty _ = []
-ortogonalSearch (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
-ortogonalSearch (Node izq p der eje) (q1,q2) = 
-  let (minEje, maxEje) = if greater eje q1 q2 then (q2, q1) else (q1, q2)
-      leftP = if greater eje minEje p then [] else ortogonalSearch izq (q1,q2)
-      rightP = if greater eje maxEje p then ortogonalSearch der (q1,q2) else []
-  in leftP ++ (if inRegion p (q1,q2) then [p] else []) ++ rightP-}
-
--- Dado un conjunto de puntos no vacio devuelve el minimo rectangulo que contenga a todos los puntos
-minimumBox :: NdTree Punto2d -> Rect
-minimumBox ndTree = let listPoints = treeToList ndTree
-                        sortPointsX = msortPunto (listPoints) 0
-                        sortPointsY = msortPunto (listPoints) 1
-                        (minX, maxX) = (coord 0 (head sortPointsX), coord 0 (last sortPointsX))
-                        (minY, maxY) = (coord 1 (head sortPointsY), coord 1 (last sortPointsY))
-                        in (P2d (minX, minY), P2d (maxX, maxY))
-
--- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
-leftBelowBox:: Punto2d -> Rect -> Int -> Rect
-leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(lowX, lowY), P2d(x, highY))
-leftBelowBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, lowY), P2d(highX, y))
-
--- Dado un punto dentro de un rectangulo, devuelve el subrectangulo a la izquierdda del punto 
-rightAboveBox:: Punto2d -> Rect -> Int -> Rect
-rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 0 = (P2d(x, lowY), P2d(highX, highY))
-rightAboveBox (P2d(x,y)) (P2d(lowX, lowY), P2d(highX, highY)) 1 = (P2d(lowX, y), P2d(highX, highY))
-
--- Determina si el primer rectangulo contiene al segundo
-boxContain :: Rect -> Rect -> Bool
-boxContain rect (r1,r2) = inRegion r1 rect && inRegion r2 rect
-
--- Determina si los rectangulos se intersecan
-boxIntersect :: Rect -> Rect -> Bool
-boxIntersect rect (P2d(xlow, ylow),P2d(xhigh,yhigh)) = 
-  (inRegion (P2d(xlow, ylow)) rect) || (inRegion (P2d(xhigh,yhigh)) rect) || (inRegion (P2d(xlow, yhigh)) rect) || (inRegion (P2d(xhigh, ylow)) rect)
 
 -- Dado un rectangulo, pone los minimos valores en la primer componente y los mayores en la segunda
 lowHigh :: Rect -> Rect
 lowHigh (P2d(x1,y1),P2d(x2,y2)) = (P2d(min x1 x2, min y1 y2), P2d(max x1 x2, max y1 y2))
 
-ortogonalSearchBox :: NdTree Punto2d -> Rect -> Rect -> [Punto2d]
-ortogonalSearchBox Empty _ _ = []
-ortogonalSearchBox (Node Empty p Empty _) rect _ = [p | inRegion p rect]
-ortogonalSearchBox (Node izq p der eje) rect box = 
-  let leftBox = leftBelowBox p box eje
-      rightBox = rightAboveBox p box eje
-      left = if boxContain rect leftBox then treeToList izq 
-      else if boxIntersect rect leftBox then ortogonalSearchBox izq rect leftBox else []
-      right = if boxContain rect rightBox then treeToList der 
-      else if boxIntersect rect rightBox then ortogonalSearchBox der rect rightBox else []
-  in left ++ [p | inRegion p rect] ++ right
+-- Dado un conjunto de Puntos y un rectangulo en forma (min,max), devuelve la lista de puntos que estan dentro del rectangulo.
+ortogonalSearchR :: NdTree Punto2d -> Rect -> [Punto2d]
+ortogonalSearchR Empty _ = []
+ortogonalSearchR (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
+ortogonalSearchR (Node izq p der eje) (min,max) = let leftP = if greater eje min p then [] else ortogonalSearchR izq (min,max)
+                                                       rightP = if greater eje max p then ortogonalSearchR der (min,max) else []
+                                                   in leftP ++ (if inRegion p (min,max) then [p] else []) ++ rightP
 
+-- Configura el rectangulo en forma (min, max), luego llama a ortogonalSearchR
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
-ortogonalSearch Empty _ = []
-ortogonalSearch (Node Empty p Empty _) rect = [p | inRegion p rect]
-ortogonalSearch ndTree (r1,r2) = 
-  let rectangulo = lowHigh (r1,r2)
-      box = minimumBox ndTree
-  in if boxContain rectangulo box then treeToList ndTree 
-     else if boxIntersect box rectangulo then ortogonalSearchBox ndTree rectangulo box else []
+ortogonalSearch ndArbol rect = let rectangulo = lowHigh rect in ortogonalSearchR ndArbol rectangulo
