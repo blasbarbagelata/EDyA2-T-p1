@@ -194,7 +194,7 @@ ortogonalSearchBox (Node izq p der eje) rect box =
       else if boxIntersect rect leftBox then ortogonalSearchBox izq rect leftBox else []
       right = if boxContain rect rightBox then treeToList der 
       else if boxIntersect rect rightBox then ortogonalSearchBox der rect rightBox else []
-  in left ++([p | inRegion p rect])++right
+  in left ++ [p | inRegion p rect] ++ right
 
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearch Empty _ = []
@@ -202,4 +202,4 @@ ortogonalSearch (Node Empty p Empty _) rect = [p | inRegion p rect]
 ortogonalSearch (Node izq p der eje) (r1,r2) = 
   let rectangulo = lowHigh (r1,r2)
       box = minimumBoundingBox (Node izq p der eje)
-  in ortogonalSearchBox (Node izq p der eje) rectangulo box
+  in if boxContain box rectangulo then treeToList (Node izq p der eje) else ortogonalSearchBox (Node izq p der eje) rectangulo box
