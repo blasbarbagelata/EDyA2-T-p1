@@ -1,3 +1,7 @@
+-- Trabajo Practico 1
+-- Estructura de Datos y Algoritmos II
+
+-- Blas Barbagelata - Tomas Castro Rojas
 
 data NdTree p = Node (NdTree p)  -- subárbol izquierdo
                       p          -- punto
@@ -156,9 +160,9 @@ lowHigh (P2d(x1,y1),P2d(x2,y2)) = (P2d(min x1 x2, min y1 y2), P2d(max x1 x2, max
 ortogonalSearchR :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearchR Empty _ = []
 ortogonalSearchR (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
-ortogonalSearchR (Node izq p der eje) (min,max) = let leftP = if greater eje min p then [] else ortogonalSearchR izq (min,max)
-                                                      rightP = if greater eje max p then ortogonalSearchR der (min,max) else []
-                                                   in leftP ++ (if inRegion p (min,max) then [p] else []) ++ rightP
+ortogonalSearchR (Node izq p der eje) (min,max) = let izqPuntos = if greater eje min p then [] else ortogonalSearchR izq (min,max)
+                                                      derPuntos = if greater eje max p then ortogonalSearchR der (min,max) else []
+                                                  in izqPuntos ++ (if inRegion p (min,max) then [p] else []) ++ derPuntos
 
 -- Configura el rectangulo en forma (min, max), luego llama a ortogonalSearchR
 ortogonalSearch :: NdTree Punto2d -> Rect -> [Punto2d]
