@@ -79,7 +79,7 @@ fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
                              izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada) -- Puntos con la coordenda menor o igual a la mediana
                              trueMedianaInd = length izqPuntos                  -- Indice de la mediana que sera la raiz
                              derPuntos = drop (trueMedianaInd+1) listaOrd       -- Puntos estricamente mayores a la coordenada de la mediana
-                             -- Si hay muchos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
+                             -- Si hay muchos puntos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
                              puntoM = listaOrd !! trueMedianaInd                -- Punto mediana
                              izqNodo = fromListLevel izqPuntos (nivel+1)
                              derNode = fromListLevel derPuntos (nivel+1)
@@ -157,7 +157,7 @@ ortogonalSearchR :: NdTree Punto2d -> Rect -> [Punto2d]
 ortogonalSearchR Empty _ = []
 ortogonalSearchR (Node Empty p Empty _) rect = if inRegion p rect then [p] else []
 ortogonalSearchR (Node izq p der eje) (min,max) = let leftP = if greater eje min p then [] else ortogonalSearchR izq (min,max)
-                                                       rightP = if greater eje max p then ortogonalSearchR der (min,max) else []
+                                                      rightP = if greater eje max p then ortogonalSearchR der (min,max) else []
                                                    in leftP ++ (if inRegion p (min,max) then [p] else []) ++ rightP
 
 -- Configura el rectangulo en forma (min, max), luego llama a ortogonalSearchR
