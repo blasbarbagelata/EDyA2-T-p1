@@ -55,25 +55,23 @@ treeEje :: NdTree p -> Int
 treeEje (Node _ _ _ eje) = eje
 
 -- Implementacion de MergeSort para la clase Puntos -----------------------------
-mergePunto :: Punto p => Int -> [p] -> [p] -> Bool -> [p]
+mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
 mergePunto k [] ys _ = ys
 mergePunto k xs [] _ = xs
 mergePunto k (x:xs) (y:ys) False = if coord k x <= coord k y then (x:mergePunto k xs (y:ys) False)
                                                              else (y:mergePunto k (x:xs) ys False)
-mergePunto k (x:xs) (y:ys) True = if coord k x >= coord k y then (x:mergePunto k xs (y:ys) True)
-                                                            else (y:mergePunto k (x:xs) ys True)
 
 split :: Punto p => [p] -> ([p], [p])
 split [] = ([], [])
 split [x] = ([x], [])
 split (x:y:zs) = let (xs, ys) = split zs in (x:xs, y:ys) 
 
-msortPunto :: Punto p => [p] -> Int -> Bool -> [p]
+msortPunto :: Punto p => [p] -> Int -> [p]
 msortPunto [] k _ = []
 msortPunto [x] k _ = [x]
-msortPunto xs k orden = let (ls, rs) = split xs
-                            (ls1, rs1) = (msortPunto ls k orden, msortPunto rs k orden)
-                        in mergePunto k ls1 rs1 orden
+msortPunto xs k = let (ls, rs) = split xs
+                            (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
+                        in mergePunto k ls1 rs1
 
 -------------------------------------------------------------------------------------
 
@@ -84,7 +82,7 @@ fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
 fromListLevel [p] nivel = Node Empty p Empty (mod nivel (dimension p))
 fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
-                             listaOrd = msortPunto ps eje False                 -- Ordenadamos la lista de puntos
+                             listaOrd = msortPunto ps eje                 -- Ordenadamos la lista de puntos
                              medianaInd = div (length listaOrd) 2               -- Indice de la mediana
                              medianaCoord = coord eje (listaOrd !! medianaInd)  -- Coordenada respecto al eje de la mediana
                              -- se podria usar drop
