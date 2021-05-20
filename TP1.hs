@@ -77,6 +77,12 @@ msortPunto xs k = let (ls, rs) = split xs
 
 -- Apartado 2)
 
+{-
+buscarMedian :: (Punto p) => [p] -> Int -> Int -> Int
+buscarMedian psOrd median eje = if coord eje (psOrd !! median) == coord eje (psOrd !! (median+1))
+                                then buscarMedian psOrd (median+1) eje else median
+-}
+
 -- A partir de una lista de Puntos y un nivel, construye un NdTree
 fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
