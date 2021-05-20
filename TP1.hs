@@ -86,6 +86,8 @@ fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
                              medianaInd = div (length listaOrd) 2               -- Indice de la mediana
                              medianaCoord = coord eje (listaOrd !! medianaInd)  -- Coordenada respecto al eje de la mediana
                              -- se podria usar drop
+                             -- trueMedianInd = buscarMedian listaOrd medianaInd eje - 1
+                             -- izqPuntos = take trueMedianInd listaOrd
                              izqPuntos = init (filter (\p -> coord eje p <= medianaCoord) listaOrd) -- Puntos con la coordenda menor o igual a la mediana
                              trueMedianaInd = length izqPuntos                  -- Indice de la mediana que sera la raiz
                              derPuntos = drop (trueMedianaInd+1) listaOrd       -- Puntos estricamente mayores a la coordenada de la mediana
