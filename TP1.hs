@@ -32,7 +32,14 @@ instance Punto Punto3d where
   coord 2 (P3d (x,y,z)) = z
 
 -- Lista de puntos del ejemplo en el enunciado
-listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2), P2d(1,10), P2d(3,5), P2d(6,8)]
+listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2){-, P2d(1,10), P2d(3,5), P2d(6,8)-}]
+
+arbol = insertar (P2d(7,2)) Empty 
+arbol1 = insertar (P2d(5,4)) arbol
+arbol2 = insertar (P2d(9,6)) arbol1
+arbol3 = insertar (P2d(8,1)) arbol2
+arbol4 = insertar (P2d(4,7)) arbol3
+arbol5 = insertar (P2d(2,3)) arbol4
 
 -- Funciones para acceder a los campos de NdTree -------------------------------
 treeDerecho :: NdTree p -> NdTree p
@@ -80,7 +87,8 @@ fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
                              listaOrd = msortPunto ps eje False                 -- Ordenadamos la lista de puntos
                              medianaInd = div (length listaOrd) 2               -- Indice de la mediana
                              medianaCoord = coord eje (listaOrd !! medianaInd)  -- Coordenada respecto al eje de la mediana
-                             izqPuntos = init (filter (\p -> coord eje p <= medianCoord) ordenada) -- Puntos con la coordenda menor o igual a la mediana
+                             -- se podria usar drop
+                             izqPuntos = init (filter (\p -> coord eje p <= medianaCoord) listaOrd) -- Puntos con la coordenda menor o igual a la mediana
                              trueMedianaInd = length izqPuntos                  -- Indice de la mediana que sera la raiz
                              derPuntos = drop (trueMedianaInd+1) listaOrd       -- Puntos estricamente mayores a la coordenada de la mediana
                              -- Si hay muchos puntos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
@@ -98,10 +106,9 @@ fromList ps = fromListLevel ps 0
 -- Inserta un punto en un arbol segun el nivel
 insertarlevel :: Punto p => p -> NdTree p -> Int -> NdTree p
 insertarlevel p Empty nivel = Node Empty p Empty (mod nivel (dimension p))
-insertarlevel p arbol nivel = let eje = treeEje arbol 
-                              in if coord eje p <= coord eje (treePunto (arbol))
-                              then insertarlevel p (treeIzquierdo arbol) (nivel + 1)
-                              else insertarlevel p (treeDerecho arbol) (nivel + 1)
+insertarlevel p (Node izq q der eje) nivel = if coord eje p <= coord eje q
+                                             then Node (insertarlevel p izq (nivel + 1)) q der eje
+                                             else Node izq q (insertarlevel p der (nivel + 1)) eje
 
 -- Inserta un punto en un NdTree
 insertar :: Punto p => p -> NdTree p -> NdTree p
@@ -115,19 +122,46 @@ treeToList Empty = []
 treeToList (Node izq punto der eje) = treeToList izq ++ [punto] ++ treeToList der
 
 -- Devuelve el punto con que posee la coordenada minima del eje correspondiente
-buscarReemplazoMin :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMin arbol eje = head (msortPunto (treeToList arbol) eje False) -- El primer elemento es el minimo
+buscarMinimo :: (Punto p) => NdTree p -> Int -> p
+buscarMinimo (Node Empty p Empty _) _ = p
+buscarMinimo (Node izq p Empty eje) ejeBusqueda = if eje == ejeBusqueda then (buscarMinimo izq ejeBusqueda) 
+                                                  else  min2 p (buscarMinimo izq ejeBusqueda) ejeBusqueda
+buscarMinimo (Node Empty p der eje) ejeBusqueda = if eje == ejeBusqueda then p 
+                                                  else min2 p (buscarMinimo der ejeBusqueda) ejeBusqueda
+buscarMinimo (Node izq p der eje) ejeBusqueda = if eje == ejeBusqueda then min2 p (buscarMinimo izq ejeBusqueda) ejeBusqueda 
+                                                else min3 p (buscarMinimo izq ejeBusqueda)  (buscarMinimo der ejeBusqueda) ejeBusqueda
+
+min2 :: Punto p => p -> p -> Int -> p
+min2 p q eje = if coord eje p < coord eje q then p else q
+
+min3 :: Punto p => p -> p -> p -> Int -> p
+min3 p q r eje = min2 p (min2 q r eje) eje
+
 
 -- Devuelve el punto con que posee la coordenada maxima del eje correspondiente
-buscarReemplazoMax :: (Punto p) => NdTree p -> Int -> p
-buscarReemplazoMax arbol eje = head (msortPunto (treeToList arbol) eje True) -- El primer elemento es el maximo
+
+buscarMaximo :: (Punto p) => NdTree p -> Int -> p
+buscarMaximo (Node Empty p Empty _) _ = p
+buscarMaximo (Node izq p Empty eje) ejeBusqueda = if eje == ejeBusqueda then p 
+                                                  else max2 p (buscarMaximo izq ejeBusqueda) ejeBusqueda
+buscarMaximo (Node Empty p der eje) ejeBusqueda = if eje == ejeBusqueda then (buscarMaximo der ejeBusqueda) 
+                                                  else max2 p (buscarMaximo der ejeBusqueda) ejeBusqueda
+buscarMaximo (Node izq p der eje) ejeBusqueda = if eje == ejeBusqueda then max2 p (buscarMaximo der ejeBusqueda) ejeBusqueda 
+                                                else max3 p (buscarMaximo izq ejeBusqueda)  (buscarMaximo der ejeBusqueda) ejeBusqueda
+
+max2 :: Punto p => p -> p -> Int -> p
+max2 p q eje = if coord eje p < coord eje q then q else p
+
+max3 :: Punto p => p -> p -> p -> Int -> p
+max3 p q r eje = max2 p (max2 q r eje) eje
+
 
 -- Reemplaza la raiz de un arbol
 reemplazar :: (Eq p, Punto p) => NdTree p -> NdTree p 
 reemplazar (Node izq _ der eje) = if der /= Empty 
-                                  then let reemplazo = (buscarReemplazoMin der eje) 
+                                  then let reemplazo = (buscarMinimo der eje) 
                                        in (Node izq reemplazo (eliminar reemplazo der) eje)
-                                  else let reemplazo = (buscarReemplazoMax izq eje) 
+                                  else let reemplazo = (buscarMaximo izq eje) 
                                        in (Node (eliminar reemplazo izq) reemplazo der eje)
 
 -- Elimina un punto de un conjunto de Puntos.
