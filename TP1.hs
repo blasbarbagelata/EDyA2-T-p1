@@ -32,7 +32,7 @@ instance Punto Punto3d where
   coord 2 (P3d (x,y,z)) = z
 
 -- Lista de puntos del ejemplo en el enunciado
-listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2){-, P2d(1,10), P2d(3,5), P2d(6,8)-}]
+listaP = [P2d(2,3), P2d(5,4), P2d(9,6),P2d(4,7), P2d(8,1), P2d(7,2){-, P2d(7,10), P2d(7,0), P2d(7,-5), P2d(1,10), P2d(3,5), P2d(6,8)-}]
 
 arbol = insertar (P2d(7,2)) Empty 
 arbol1 = insertar (P2d(5,4)) arbol
@@ -56,10 +56,10 @@ treeEje (Node _ _ _ eje) = eje
 
 -- Implementacion de MergeSort para la clase Puntos -----------------------------
 mergePunto :: Punto p => Int -> [p] -> [p] -> [p]
-mergePunto k [] ys _ = ys
-mergePunto k xs [] _ = xs
-mergePunto k (x:xs) (y:ys) False = if coord k x <= coord k y then (x:mergePunto k xs (y:ys) False)
-                                                             else (y:mergePunto k (x:xs) ys False)
+mergePunto k [] ys = ys
+mergePunto k xs [] = xs
+mergePunto k (x:xs) (y:ys) = if coord k x <= coord k y then (x:mergePunto k xs (y:ys))
+                                                             else (y:mergePunto k (x:xs) ys)
 
 split :: Punto p => [p] -> ([p], [p])
 split [] = ([], [])
@@ -67,35 +67,32 @@ split [x] = ([x], [])
 split (x:y:zs) = let (xs, ys) = split zs in (x:xs, y:ys) 
 
 msortPunto :: Punto p => [p] -> Int -> [p]
-msortPunto [] k _ = []
-msortPunto [x] k _ = [x]
+msortPunto [] k = []
+msortPunto [x] k = [x]
 msortPunto xs k = let (ls, rs) = split xs
-                            (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
-                        in mergePunto k ls1 rs1
+                      (ls1, rs1) = (msortPunto ls k, msortPunto rs k)
+                  in mergePunto k ls1 rs1
 
 -------------------------------------------------------------------------------------
 
 -- Apartado 2)
 
-{-
-buscarMedian :: (Punto p) => [p] -> Int -> Int -> Int
-buscarMedian psOrd median eje = if coord eje (psOrd !! median) == coord eje (psOrd !! (median+1))
-                                then buscarMedian psOrd (median+1) eje else median
--}
+buscarMedian :: (Punto p) => [p] -> Int -> Int -> Int -> Int
+buscarMedian psOrd median eje largo = if (median+1) < largo && coord eje (psOrd !! median) == coord eje (psOrd !! (median+1))
+                                then buscarMedian psOrd (median+1) eje largo else median
 
 -- A partir de una lista de Puntos y un nivel, construye un NdTree
 fromListLevel :: Punto p => [p] -> Int -> NdTree p
 fromListLevel [] _ = Empty
 fromListLevel [p] nivel = Node Empty p Empty (mod nivel (dimension p))
 fromListLevel ps nivel = let eje = mod nivel (dimension (head ps))
-                             listaOrd = msortPunto ps eje                 -- Ordenadamos la lista de puntos
-                             medianaInd = div (length listaOrd) 2               -- Indice de la mediana
+                             listaOrd = msortPunto ps eje                       -- Ordenadamos la lista de puntos
+                             largoLista = length listaOrd
+                             medianaInd = div largoLista 2                      -- Indice de la mediana
                              medianaCoord = coord eje (listaOrd !! medianaInd)  -- Coordenada respecto al eje de la mediana
-                             -- se podria usar drop
-                             -- trueMedianInd = buscarMedian listaOrd medianaInd eje - 1
-                             -- izqPuntos = take trueMedianInd listaOrd
-                             izqPuntos = init (filter (\p -> coord eje p <= medianaCoord) listaOrd) -- Puntos con la coordenda menor o igual a la mediana
-                             trueMedianaInd = length izqPuntos                  -- Indice de la mediana que sera la raiz
+                             -- Corremos el indice de la mediana en caso de haber repetidos
+                             trueMedianaInd = buscarMedian listaOrd medianaInd eje largoLista
+                             izqPuntos = take trueMedianaInd listaOrd           -- Puntos menos o iguales a la coordenada de la mediana
                              derPuntos = drop (trueMedianaInd+1) listaOrd       -- Puntos estricamente mayores a la coordenada de la mediana
                              -- Si hay muchos puntos con la coordenada correspondiente iguales, tomamos el ultimo que aparece en la lista
                              puntoM = listaOrd !! trueMedianaInd                -- Punto mediana
